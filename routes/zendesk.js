@@ -70,9 +70,6 @@ function getUserFromSession(req) {
  */
 router.get('/sso', async (req, res) => {
   try {
-    // Get user from session (must be authenticated)
-    const user = getUserFromSession(req);
-    
     // Get return_to parameter
     const returnTo = req.query.return_to;
 
@@ -84,13 +81,26 @@ router.get('/sso', async (req, res) => {
       });
     }
 
-    // If no user session, show authentication/verification form
-    if (!user || !user.email) {
-      // Check if user is requesting access with a ticket ID
-      const ticketId = req.query.ticket_id || null;
-      
-      // Return HTML form for email authentication
-      return res.send(`
+    // Always use support@telecrm.in for JWT SSO
+    // This email is CC'd on all tickets, so it can access them
+    const user = {
+      email: 'support@telecrm.in',
+      name: 'Support'
+    };
+
+    // Generate JWT token with support@telecrm.in email
+    const token = jwtService.generateToken(user.email, user.name);
+
+    // Build Zendesk SSO URL
+    const ssoUrl = jwtService.buildSSOUrl(token, returnTo);
+
+    console.log('Redirecting to Zendesk SSO...');
+    console.log('Using email:', user.email);
+    console.log('Return to:', returnTo);
+    console.log('SSO URL:', ssoUrl.replace(token, 'TOKEN_HIDDEN'));
+
+    // Redirect to Zendesk SSO - this should authenticate automatically
+    res.redirect(ssoUrl);
         <!DOCTYPE html>
         <html lang="en">
         <head>
@@ -204,67 +214,6 @@ router.get('/sso', async (req, res) => {
         </body>
         </html>
       `);
-    }
-
-    // Check if user is verified (required for dev team access)
-    if (!verificationService.isVerified(user.email)) {
-      return res.status(403).send(`
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Access Denied</title>
-          <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body {
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-              min-height: 100vh;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              padding: 20px;
-            }
-            .container {
-              background: white;
-              border-radius: 12px;
-              box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-              padding: 40px;
-              max-width: 500px;
-              width: 100%;
-              text-align: center;
-            }
-            h1 { color: #842029; margin-bottom: 20px; }
-            p { color: #6c757d; margin-bottom: 20px; }
-            a { color: #667eea; text-decoration: none; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <h1>Access Not Verified</h1>
-            <p>Your email (${user.email}) has not been verified by support@telecrm.in yet.</p>
-            <p>Please request access first, or contact support@telecrm.in for verification.</p>
-            <p><a href="/zendesk/request-access?return_to=${encodeURIComponent(returnTo)}">Request Access</a></p>
-          </div>
-        </body>
-        </html>
-      `);
-    }
-
-    // Generate JWT token with user email from backend session
-    // NEVER trust email from frontend - always use backend session
-    const token = jwtService.generateToken(user.email, user.name);
-
-    // Build Zendesk SSO URL
-    const ssoUrl = jwtService.buildSSOUrl(token, returnTo);
-
-    console.log('Redirecting to Zendesk SSO...');
-    console.log('User email:', user.email);
-    console.log('Return to:', returnTo);
-
-    // Redirect to Zendesk SSO
-    res.redirect(ssoUrl);
 
   } catch (error) {
     console.error('Error in Zendesk SSO:', error);

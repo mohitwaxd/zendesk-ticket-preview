@@ -26,12 +26,16 @@ class JWTService {
     const now = Math.floor(Date.now() / 1000);
     
     // JWT payload for Zendesk SSO
+    // IMPORTANT: The email must exist as a user in Zendesk for JWT SSO to work
     const payload = {
       iat: now, // Issued at time
       jti: uuidv4(), // Unique token ID (prevents reuse)
-      email: email,
+      email: email.toLowerCase().trim(), // Zendesk requires lowercase email
       name: name || email.split('@')[0], // Use email prefix if name not provided
     };
+
+    console.log('Generating JWT token for:', payload.email);
+    console.log('JWT Secret configured:', zendeskConfig.jwtSecret ? 'Yes' : 'No');
 
     // Sign with Zendesk JWT secret
     // Token expires in 5 minutes (300 seconds)
@@ -39,6 +43,8 @@ class JWTService {
       algorithm: 'HS256',
       expiresIn: '5m'
     });
+
+    console.log('JWT token generated successfully, length:', token.length);
 
     return token;
   }
