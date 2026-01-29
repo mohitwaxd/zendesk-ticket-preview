@@ -127,31 +127,51 @@ router.get('/sso', async (req, res) => {
 
     // Validate return_to - must start with /hc/ for security
     if (!returnTo || !jwtService.validateReturnTo(returnTo)) {
-      return res.status(400).send(`
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-          <meta charset="UTF-8">
-          <title>Missing Parameter</title>
-          <style>
-            body { font-family: sans-serif; padding: 40px; text-align: center; }
-            .error { background: #fff3cd; color: #856404; padding: 20px; border-radius: 8px; margin: 20px auto; max-width: 500px; }
-            .info { background: #e7f3ff; color: #084298; padding: 15px; border-radius: 8px; margin: 20px auto; max-width: 500px; }
-            a { color: #667eea; }
-          </style>
-        </head>
-        <body>
-          <div class="error">
-            <h2>Missing Parameter</h2>
-            <p><strong>return_to</strong> parameter is required and must start with <code>/hc/</code></p>
-            <p>Example: <code>/zendesk/sso?return_to=/hc/en-us/requests/2405</code></p>
-          </div>
-          <div class="info">
-            <p>To view a ticket, visit: <a href="/ticket/2405">/ticket/2405</a> and click "View Full Ticket"</p>
-          </div>
-        </body>
-        </html>
-      `);
+      // If ticket_id was provided but return_to is invalid, try to construct it
+      if (ticketId && /^\d+$/.test(ticketId)) {
+        returnTo = `/hc/en-us/requests/${ticketId}`;
+      } else {
+        // No valid parameters - show helpful error page
+        return res.status(400).send(`
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <title>Missing Parameter</title>
+            <style>
+              body { font-family: sans-serif; padding: 40px; text-align: center; background: #f8f9fa; }
+              .container { max-width: 600px; margin: 0 auto; }
+              .error { background: #fff3cd; color: #856404; padding: 20px; border-radius: 8px; margin: 20px 0; }
+              .info { background: #e7f3ff; color: #084298; padding: 15px; border-radius: 8px; margin: 20px 0; }
+              .success { background: #d1e7dd; color: #0f5132; padding: 15px; border-radius: 8px; margin: 20px 0; }
+              a { color: #667eea; text-decoration: none; font-weight: bold; }
+              a:hover { text-decoration: underline; }
+              code { background: #f8f9fa; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="error">
+                <h2>Missing Parameter</h2>
+                <p><strong>return_to</strong> parameter is required and must start with <code>/hc/</code></p>
+                <p><strong>OR</strong> provide <code>ticket_id</code> parameter</p>
+              </div>
+              <div class="info">
+                <h3>How to use:</h3>
+                <p><strong>Option 1:</strong> <code>/zendesk/sso?return_to=/hc/en-us/requests/2405</code></p>
+                <p><strong>Option 2:</strong> <code>/zendesk/sso?ticket_id=2405</code></p>
+              </div>
+              <div class="success">
+                <h3>Recommended:</h3>
+                <p>Visit the ticket preview page and click "View Full Ticket":</p>
+                <p><a href="/ticket/2405">/ticket/2405</a></p>
+                <p style="font-size: 12px; margin-top: 10px;">This automatically handles everything for you!</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `);
+      }
     }
 
     // Always use support@telecrm.in for JWT SSO
