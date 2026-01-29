@@ -7,8 +7,21 @@
 
 require('dotenv').config();
 
-if (!process.env.ZENDESK_SUBDOMAIN) {
+// Validate and sanitize subdomain
+let subdomain = process.env.ZENDESK_SUBDOMAIN;
+
+if (!subdomain) {
   throw new Error('ZENDESK_SUBDOMAIN environment variable is required');
+}
+
+// Remove any protocol or domain parts if accidentally included
+subdomain = subdomain.trim();
+subdomain = subdomain.replace(/^https?:\/\//, ''); // Remove http:// or https://
+subdomain = subdomain.replace(/\.zendesk\.com.*$/, ''); // Remove .zendesk.com and anything after
+subdomain = subdomain.split('/')[0]; // Remove any path
+
+if (!subdomain || subdomain.length === 0) {
+  throw new Error('ZENDESK_SUBDOMAIN must be a valid subdomain (e.g., "mycompany" not "https://mycompany.zendesk.com")');
 }
 
 if (!process.env.ZENDESK_EMAIL) {
@@ -24,12 +37,12 @@ if (!process.env.ZENDESK_JWT_SECRET) {
 }
 
 module.exports = {
-  subdomain: process.env.ZENDESK_SUBDOMAIN,
+  subdomain: subdomain,
   email: process.env.ZENDESK_EMAIL,
   apiToken: process.env.ZENDESK_API_TOKEN,
   jwtSecret: process.env.ZENDESK_JWT_SECRET,
   // Zendesk API base URL
-  apiUrl: `https://${process.env.ZENDESK_SUBDOMAIN}.zendesk.com/api/v2`,
+  apiUrl: `https://${subdomain}.zendesk.com/api/v2`,
   // Zendesk JWT SSO URL
-  ssoUrl: `https://${process.env.ZENDESK_SUBDOMAIN}.zendesk.com/access/jwt`
+  ssoUrl: `https://${subdomain}.zendesk.com/access/jwt`
 };

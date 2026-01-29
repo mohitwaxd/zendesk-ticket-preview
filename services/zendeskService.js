@@ -53,6 +53,13 @@ class ZendeskService {
         }
         throw new Error(`Zendesk API error: ${error.response.status} - ${error.response.statusText}`);
       }
+      
+      // Network/DNS errors
+      if (error.code === 'ENOTFOUND' || error.message.includes('ENOTFOUND')) {
+        const subdomain = zendeskConfig.subdomain;
+        throw new Error(`Cannot connect to Zendesk. Check ZENDESK_SUBDOMAIN (currently: "${subdomain}"). It should be just the subdomain (e.g., "mycompany"), not a full URL.`);
+      }
+      
       throw new Error(`Failed to fetch ticket: ${error.message}`);
     }
   }
