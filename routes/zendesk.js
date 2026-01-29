@@ -112,18 +112,46 @@ router.get('/get-jwt', async (req, res) => {
  * 
  * Query parameters:
  * - return_to: Path to redirect after SSO (must start with /hc/)
+ * - ticket_id: Optional ticket ID (if return_to not provided, will use this)
  */
 router.get('/sso', async (req, res) => {
   try {
     // Get return_to parameter
-    const returnTo = req.query.return_to;
+    let returnTo = req.query.return_to;
+    const ticketId = req.query.ticket_id;
+
+    // If return_to not provided but ticket_id is, construct it
+    if (!returnTo && ticketId) {
+      returnTo = `/hc/en-us/requests/${ticketId}`;
+    }
 
     // Validate return_to - must start with /hc/ for security
     if (!returnTo || !jwtService.validateReturnTo(returnTo)) {
-      return res.status(400).json({
-        error: 'Invalid return_to parameter',
-        message: 'return_to must start with /hc/'
-      });
+      return res.status(400).send(`
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <title>Missing Parameter</title>
+          <style>
+            body { font-family: sans-serif; padding: 40px; text-align: center; }
+            .error { background: #fff3cd; color: #856404; padding: 20px; border-radius: 8px; margin: 20px auto; max-width: 500px; }
+            .info { background: #e7f3ff; color: #084298; padding: 15px; border-radius: 8px; margin: 20px auto; max-width: 500px; }
+            a { color: #667eea; }
+          </style>
+        </head>
+        <body>
+          <div class="error">
+            <h2>Missing Parameter</h2>
+            <p><strong>return_to</strong> parameter is required and must start with <code>/hc/</code></p>
+            <p>Example: <code>/zendesk/sso?return_to=/hc/en-us/requests/2405</code></p>
+          </div>
+          <div class="info">
+            <p>To view a ticket, visit: <a href="/ticket/2405">/ticket/2405</a> and click "View Full Ticket"</p>
+          </div>
+        </body>
+        </html>
+      `);
     }
 
     // Always use support@telecrm.in for JWT SSO
