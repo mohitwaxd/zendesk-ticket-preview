@@ -50,13 +50,12 @@ class JWTService {
     }
 
     // Sign with Zendesk JWT secret using HS256 algorithm
-    // Token expires in 5 minutes (300 seconds)
+    // Match previous app: no explicit expiration (Zendesk handles it)
     let token;
     try {
       token = jwt.sign(payload, zendeskConfig.jwtSecret, {
         algorithm: 'HS256',
-        expiresIn: '5m',
-        noTimestamp: false // Ensure iat is included
+        noTimestamp: false // Ensure iat is included (but don't add exp automatically)
       });
     } catch (error) {
       console.error('JWT signing error:', error);
