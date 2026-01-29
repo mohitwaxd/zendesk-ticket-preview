@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket Preview</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .ticket-info {
+            padding: 30px;
+        }
+
+        .ticket-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .meta-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .meta-label {
+            font-size: 12px;
+            color: #6c757d;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .meta-value {
+            font-size: 16px;
+            color: #212529;
+            font-weight: 500;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status.new { background: #cfe2ff; color: #084298; }
+        .status.open { background: #fff3cd; color: #856404; }
+        .status.pending { background: #f8d7da; color: #842029; }
+        .status.solved { background: #d1e7dd; color: #0f5132; }
+        .status.closed { background: #d3d3d3; color: #495057; }
+
+        .priority {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .priority.low { background: #d1e7dd; color: #0f5132; }
+        .priority.normal { background: #cfe2ff; color: #084298; }
+        .priority.high { background: #fff3cd; color: #856404; }
+        .priority.urgent { background: #f8d7da; color: #842029; }
+
+        .subject {
+            font-size: 24px;
+            font-weight: 600;
+            color: #212529;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .description {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            line-height: 1.6;
+            color: #495057;
+        }
+
+        .comments-section {
+            margin-top: 30px;
+        }
+
+        .comments-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #212529;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .comment {
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .comment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .comment-author {
+            font-weight: 600;
+            color: #212529;
+        }
+
+        .comment-date {
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .comment-body {
+            color: #495057;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .action-section {
+            padding: 30px;
+            background: #f8f9fa;
+            border-top: 2px solid #e9ecef;
+            text-align: center;
+        }
+
+        .btn-view-full {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-view-full:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-view-full:active {
+            transform: translateY(0);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+
+        .error {
+            padding: 30px;
+            background: #f8d7da;
+            color: #842029;
+            border-radius: 8px;
+            margin: 20px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Ticket Preview</h1>
+            <p>Read-only preview of ticket details</p>
+        </div>
+
+        <div id="content">
+            <div class="loading">
+                <p>Loading ticket information...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get ticket ID from URL path
+        // Expected URL format: /ticket/12345
+        const pathParts = window.location.pathname.split('/');
+        const ticketId = pathParts[pathParts.length - 1];
+
+        if (!ticketId || isNaN(parseInt(ticketId))) {
+            document.getElementById('content').innerHTML = `
+                <div class="error">
+                    <h2>Invalid Ticket ID</h2>
+                    <p>Please provide a valid ticket ID in the URL: /ticket/12345</p>
+                </div>
+            `;
+        } else {
+            // Fetch ticket data from backend
+            fetch(`/api/public/ticket/${ticketId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => Promise.reject(err));
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    renderTicket(data.data);
+                })
+                .catch(error => {
+                    document.getElementById('content').innerHTML = `
+                        <div class="error">
+                            <h2>Error Loading Ticket</h2>
+                            <p>${error.error || error.message || 'Failed to load ticket'}</p>
+                        </div>
+                    `;
+                });
+        }
+
+        function renderTicket(ticket) {
+            const content = document.getElementById('content');
+            
+            // Format date
+            const formatDate = (dateString) => {
+                const date = new Date(dateString);
+                return date.toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            };
+
+            // Build ticket HTML
+            let html = `
+                <div class="ticket-info">
+                    <div class="subject">${escapeHtml(ticket.subject)}</div>
+                    
+                    <div class="ticket-meta">
+                        <div class="meta-item">
+                            <span class="meta-label">Ticket ID</span>
+                            <span class="meta-value">#${ticket.ticketId}</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Status</span>
+                            <span class="meta-value">
+                                <span class="status ${ticket.status.toLowerCase()}">${ticket.status}</span>
+                            </span>
+                        </div>
+                        ${ticket.priority ? `
+                        <div class="meta-item">
+                            <span class="meta-label">Priority</span>
+                            <span class="meta-value">
+                                <span class="priority ${ticket.priority.toLowerCase()}">${ticket.priority}</span>
+                            </span>
+                        </div>
+                        ` : ''}
+                        <div class="meta-item">
+                            <span class="meta-label">Created</span>
+                            <span class="meta-value">${formatDate(ticket.created_at)}</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Last Updated</span>
+                            <span class="meta-value">${formatDate(ticket.updated_at)}</span>
+                        </div>
+                    </div>
+
+                    ${ticket.description ? `
+                    <div class="description">
+                        <strong>Description:</strong><br>
+                        ${escapeHtml(ticket.description)}
+                    </div>
+                    ` : ''}
+
+                    <div class="comments-section">
+                        <div class="comments-title">Comments (${ticket.comments.length})</div>
+                        ${ticket.comments.length > 0 ? ticket.comments.map(comment => `
+                            <div class="comment">
+                                <div class="comment-header">
+                                    <span class="comment-author">${escapeHtml(comment.author_name)}</span>
+                                    <span class="comment-date">${formatDate(comment.created_at)}</span>
+                                </div>
+                                <div class="comment-body">${escapeHtml(comment.body)}</div>
+                            </div>
+                        `).join('') : `
+                            <div class="empty-state">
+                                <p>No public comments available</p>
+                            </div>
+                        `}
+                    </div>
+                </div>
+
+                <div class="action-section">
+                    <button class="btn-view-full" onclick="viewFullTicket()">
+                        View Full Ticket in Zendesk
+                    </button>
+                </div>
+            `;
+
+            content.innerHTML = html;
+        }
+
+        function viewFullTicket() {
+            // Get ticket ID from URL
+            const pathParts = window.location.pathname.split('/');
+            const ticketId = pathParts[pathParts.length - 1];
+            
+            // Redirect to SSO endpoint with return_to parameter
+            // The return_to must start with /hc/ for security
+            const returnTo = `/hc/en-us/requests/${ticketId}`;
+            window.location.href = `/zendesk/sso?return_to=${encodeURIComponent(returnTo)}`;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
