@@ -351,10 +351,10 @@
             const pathParts = window.location.pathname.split('/');
             const ticketId = pathParts[pathParts.length - 1];
             
-            // Redirect to SSO endpoint with return_to parameter
+            // Redirect to SSO endpoint with return_to parameter and ticket_id
             // The return_to must start with /hc/ for security
             const returnTo = `/hc/en-us/requests/${ticketId}`;
-            window.location.href = `/zendesk/sso?return_to=${encodeURIComponent(returnTo)}`;
+            window.location.href = `/zendesk/sso?return_to=${encodeURIComponent(returnTo)}&ticket_id=${ticketId}`;
         }
 
         function escapeHtml(text) {

@@ -70,7 +70,14 @@ class JWTService {
   buildSSOUrl(token, returnTo) {
     const baseUrl = zendeskConfig.ssoUrl;
     const encodedReturnTo = encodeURIComponent(returnTo);
-    return `${baseUrl}?jwt=${token}&return_to=${encodedReturnTo}`;
+    const ssoUrl = `${baseUrl}?jwt=${token}&return_to=${encodedReturnTo}`;
+    
+    // Log for debugging (remove in production or use proper logger)
+    console.log('JWT SSO URL:', ssoUrl.replace(token, 'TOKEN_HIDDEN'));
+    console.log('JWT Token length:', token.length);
+    console.log('Return to:', returnTo);
+    
+    return ssoUrl;
   }
 }
 
