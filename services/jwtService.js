@@ -25,18 +25,18 @@ class JWTService {
   generateToken(email, name) {
     const now = Math.floor(Date.now() / 1000);
     
-    // JWT payload for Zendesk SSO
+    // JWT payload for Zendesk SSO (matching previous app format)
     // Required fields: iat, jti, email
-    // Optional but recommended: name, external_id
-    const cleanEmail = email.toLowerCase().trim();
+    // Optional but recommended: name
+    const cleanEmail = email.toLowerCase().trim().replace(/\s+/g, '+'); // Sanitize email like previous app
     const userName = name || cleanEmail.split('@')[0];
     
+    // JWT payload format matching previous app exactly
     const payload = {
-      iat: now, // Issued at time (required)
-      jti: uuidv4(), // Unique token ID (required, prevents reuse)
-      email: cleanEmail, // User email (required) - must match Zendesk user or will create new user
+      email: cleanEmail, // User email (required) - must match Zendesk user
       name: userName, // User name (optional but recommended)
-      // external_id: cleanEmail, // Optional: unique external identifier
+      iat: now, // Issued at time (required)
+      jti: Math.floor(Math.random() * Math.pow(2, 64)).toString(), // Unique token ID (matching previous app format)
     };
 
     console.log('Generating JWT token for:', payload.email);
