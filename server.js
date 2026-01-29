@@ -14,6 +14,7 @@ const cookieParser = require('cookie-parser');
 
 const apiRoutes = require('./routes/api');
 const zendeskRoutes = require('./routes/zendesk');
+const diagnosticsRoutes = require('./routes/diagnostics');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -34,6 +35,7 @@ app.get('/ticket/:ticketId', (req, res) => {
 // Routes
 app.use('/api', apiRoutes);
 app.use('/zendesk', zendeskRoutes);
+app.use('/diagnostics', diagnosticsRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
