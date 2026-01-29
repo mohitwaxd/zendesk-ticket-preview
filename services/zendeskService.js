@@ -49,7 +49,8 @@ class ZendeskService {
           throw new Error('Ticket not found');
         }
         if (error.response.status === 403) {
-          throw new Error('Access denied to ticket');
+          const errorDetail = error.response.data?.error || error.response.data?.description || '';
+          throw new Error(`Access denied to ticket. The agent account (${zendeskConfig.email}) may not have permission to view this ticket. Ensure the agent has access to the ticket's organization and the ticket is not restricted. Details: ${errorDetail}`);
         }
         throw new Error(`Zendesk API error: ${error.response.status} - ${error.response.statusText}`);
       }
