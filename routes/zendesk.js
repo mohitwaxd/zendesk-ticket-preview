@@ -174,7 +174,7 @@ router.get('/sso', async (req, res) => {
         <body>
           <div class="container">
             <h1>Authenticate to View Ticket</h1>
-            <p>Enter your email address to continue to Zendesk</p>
+            <p>Enter your email address to continue to Zendesk. You can view tickets if you are the requester, CC'd on the ticket, or have agent/admin access.</p>
             ${req.query.error ? `<div class="error">${req.query.error}</div>` : ''}
             <form method="GET" action="/zendesk/sso">
               <input type="hidden" name="return_to" value="${returnTo}">
