@@ -341,7 +341,7 @@ router.post('/request-access', (req, res) => {
     }
 
     // Request verification
-    const token = verificationService.requestAccess(email, ticket_id);
+    const token = verificationService.requestAccess(email, ticket_id, return_to);
     
     // In production, send email to support@telecrm.in with verification link
     // For now, show success message with verification link
@@ -443,13 +443,34 @@ router.get('/verify', (req, res) => {
     // Verify the user
     verificationService.verifyUser(token, verifier);
 
+    // Get the return_to URL from verification (or use default)
+    const returnTo = verification.returnTo || (verification.ticketId ? `/hc/en-us/requests/${verification.ticketId}` : '/hc/en-us');
+
+    // Create session for the verified user
+    const sessionId = require('uuid').v4();
+    sessions.set(sessionId, { 
+      email: verification.email, 
+      name: verification.email.split('@')[0] 
+    });
+
+    // Set session cookie
+    res.cookie('sessionId', sessionId, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    });
+
+    // Automatically redirect to ticket via SSO
+    // This will open the ticket in Zendesk after JWT SSO authentication
+    const ssoRedirectUrl = `/zendesk/sso?return_to=${encodeURIComponent(returnTo)}`;
+    
     res.send(`
       <!DOCTYPE html>
       <html lang="en">
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>User Verified</title>
+        <title>User Verified - Redirecting...</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body {
@@ -473,7 +494,26 @@ router.get('/verify', (req, res) => {
           h1 { color: #0f5132; margin-bottom: 20px; }
           .success { background: #d1e7dd; color: #0f5132; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
           p { color: #6c757d; margin-bottom: 15px; }
+          .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+          }
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
         </style>
+        <script>
+          // Automatically redirect after 2 seconds
+          setTimeout(function() {
+            window.location.href = '${ssoRedirectUrl}';
+          }, 2000);
+        </script>
       </head>
       <body>
         <div class="container">
@@ -481,7 +521,12 @@ router.get('/verify', (req, res) => {
           <div class="success">
             <strong>${verification.email}</strong> has been verified and can now access tickets.
           </div>
-          <p>The user can now use the ticket preview system to access Zendesk tickets.</p>
+          <p>Opening ticket in Zendesk...</p>
+          <div class="spinner"></div>
+          <p style="font-size: 14px; color: #6c757d; margin-top: 20px;">
+            If you are not redirected automatically, 
+            <a href="${ssoRedirectUrl}" style="color: #667eea;">click here</a>.
+          </p>
         </div>
       </body>
       </html>
@@ -581,7 +626,7 @@ router.get('/admin', (req, res) => {
                     <td>${p.ticketId || 'N/A'}</td>
                     <td>${new Date(p.requestedAt).toLocaleString()}</td>
                     <td>
-                      <a href="/zendesk/verify?token=${p.token}&verifier=support@telecrm.in" class="btn">Verify</a>
+                      <a href="/zendesk/verify?token=${p.token}&verifier=support@telecrm.in" class="btn">Verify & Open Ticket</a>
                     </td>
                   </tr>
                 `).join('')}

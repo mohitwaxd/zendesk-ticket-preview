@@ -23,12 +23,13 @@ class VerificationService {
    * @param {string} ticketId - Optional ticket ID
    * @returns {string} Verification token
    */
-  requestAccess(email, ticketId = null) {
+  requestAccess(email, ticketId = null, returnTo = null) {
     const token = uuidv4();
     pendingVerifications.set(token, {
       email: email.toLowerCase().trim(),
       requestedAt: new Date(),
-      ticketId: ticketId
+      ticketId: ticketId,
+      returnTo: returnTo || (ticketId ? `/hc/en-us/requests/${ticketId}` : '/hc/en-us')
     });
 
     // In production, send email to support@telecrm.in with verification link
