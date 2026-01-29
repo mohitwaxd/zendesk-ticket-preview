@@ -1,0 +1,34 @@
+<div class="dropdown-container">
+  <label class="selector-label">{{ label }}</label>
+  <button
+    class="selector-container"
+    (click)="toggleDropdown()"
+    [class.disabled]="disabled"
+    [disabled]="disabled"
+    #dropdownContainer
+  >
+    <div class="selected-value">
+      {{ selectedOption?.name || placeholder }}
+    </div>
+
+    @if (!disabled) {
+      <div class="dropdown-arrow" [class.open]="isDropdownOpen">
+        <img src="assets/arrow-down.svg" alt="arrow-down" />
+      </div>
+    }
+  </button>
+
+  @if (isDropdownOpen) {
+    <div class="dropdown-menu" (click)="$event.stopPropagation()">
+      @for (option of dropdownOptions; track option.id) {
+        <div
+          class="dropdown-item"
+          (click)="selectOption(option)"
+          [class.selected]="selectedOption?.id === option.id"
+        >
+          {{ option.name }}
+        </div>
+      }
+    </div>
+  }
+</div>

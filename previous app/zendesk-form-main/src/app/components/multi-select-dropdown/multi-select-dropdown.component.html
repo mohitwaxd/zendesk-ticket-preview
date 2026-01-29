@@ -1,0 +1,62 @@
+<div class="dropdown-container">
+  <label class="selector-label">{{ label }}</label>
+
+  <div class="selector-wrapper" #dropdownContainer (click)="toggleDropdown()">
+    <div class="selected-options">
+      @for (option of selectedOptions; track option.id) {
+        <app-user-chip [user]="option" (removed)="removeOption(option)">
+        </app-user-chip>
+      } @empty {
+        <div class="no-selected-options">Select</div>
+      }
+
+    </div>
+    
+    <div class="dropdown-controls">
+      <div
+      class="dropdown-arrow"
+      class="dropdown-arrow"
+      [class.open]="isDropdownOpen"
+      >
+      <img src="assets/arrow-down.svg" alt="dropdown-arrow" srcset="" />
+    </div>
+  </div>
+</div>
+
+@if (isDropdownOpen) {
+  <div class="dropdown-menu" #dropdownMenu>
+      <div class="search-input-container">      
+          <input
+            type="text"
+            class="search-input"
+            [placeholder]="placeholder"
+            [(ngModel)]="searchTerm"
+            (input)="onSearchInput($event)"
+            (blur)="onSearchInput($event)"
+          />
+      </div>
+
+      @if (options.length === 0) {
+        <div class="no-results">No results found</div>
+      } @else {
+        @for (option of filteredOptions; track option.id) {
+          <div class="dropdown-item" (click)="selectOption($event, option)">
+            <input type="checkbox" [checked]="isOptionSelected(option)">
+            <label class="checkbox-wrapper">
+              <div class="avatar" [style.background-color]="'#4F38A2'">
+                {{ option.initial || option.name.charAt(0).toUpperCase() }}
+              </div>
+              <div class="user-details-wrapper">
+                <div class="user-details">
+                  <div class="name">{{ option.name }}</div>
+                  <div class="email">{{ option.email }}</div>
+                </div>
+                <span class="role">{{ option.role }}</span>
+              </div>
+            </label>
+          </div>
+        }
+      }
+    </div>
+  }
+</div>

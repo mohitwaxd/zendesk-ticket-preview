@@ -1,0 +1,65 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  min-height: 95vh;
+  overflow: hidden;
+}
+
+.container h1 {
+  font-size: 24px;
+  font-weight: 500;
+  padding: 20px 30px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0px 0px 4px 0px rgba(0, 0, 0, 0.05);
+}
+
+.content-container {
+  padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.btn-container {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  align-items: center;
+}
+
+.footer-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  padding: 10px 20px;
+  gap: 20px;
+  justify-content: end;
+  align-items: center;
+  border-top: 1px solid #F5F0FE;
+}
+
+.view-tickets-btn-container {
+  display: flex;
+  justify-content: end;
+  align-items: center;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  padding-bottom: 20px;
+}
+
+.view-tickets-btn {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  color: #0077DF;
+}
+

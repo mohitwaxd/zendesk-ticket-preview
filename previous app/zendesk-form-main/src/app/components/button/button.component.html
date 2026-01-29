@@ -1,0 +1,11 @@
+<button
+  [type]="type"
+  class="button"
+  [class.primary]="variant === 'primary'"
+  [class.secondary]="variant === 'secondary'"
+  (click)="onClick()"
+  [class.disabled]="disabled"
+  [disabled]="disabled"
+>
+  {{ label }}
+</button>

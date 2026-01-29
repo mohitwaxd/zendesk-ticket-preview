@@ -32,6 +32,11 @@ app.get('/ticket/:ticketId', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'ticket.html'));
 });
 
+// JWT test page route
+app.get('/test-jwt', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'test-jwt.html'));
+});
+
 // Routes
 app.use('/api', apiRoutes);
 app.use('/zendesk', zendeskRoutes);

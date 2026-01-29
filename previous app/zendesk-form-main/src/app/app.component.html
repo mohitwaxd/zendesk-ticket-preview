@@ -1,0 +1,72 @@
+<div class="container">
+  <h1 class="title">Telecrm Ticketing</h1>
+
+  <div class="content-container">
+    <app-dropdown
+      label="Select Enterprise"
+      [dropdownOptions]="enterprises"
+      [selectedOption]="selectedEnterprise"
+      (optionSelected)="onEnterpriseSelected($event)"
+      [disabled]="(enterprises && enterprises.length === 1)"
+    ></app-dropdown>
+
+    @if (createTicketMode) {
+    <div class="view-tickets-btn-container">
+        <button class="view-tickets-btn" (click)="onViewTickets()">
+            <img src="assets/link.svg" alt="view-ticket" />
+            <span>View Ticket</span>
+        </button>
+    </div>
+
+      <app-dropdown
+        label="Ticket Creator"
+        [dropdownOptions]="ticketCreators"
+        [selectedOption]="selectedTicketCreator"
+        (optionSelected)="onTicketCreatorSelected($event)"
+        [disabled]="!(selectedTicketCreator == null)"
+      ></app-dropdown>
+
+      <app-multi-select-dropdown
+        label="Add Telecrm Team"
+        [options]="customerSuccessTeamMembers"
+        [selectedOptions]="selectedCustomerSuccessTeamMembers"
+        (selectionChange)="onCSTeamMembersChange($event)"
+      ></app-multi-select-dropdown>
+
+      <app-multi-select-dropdown
+        [label]="selectedEnterprise?.name + ' Team'"
+        [options]="customerTeamMembers"
+        [selectedOptions]="selectedTeamMembers"
+        (selectionChange)="onCustomerTeamMembersChange($event)"
+      ></app-multi-select-dropdown>
+    }
+
+    @if (!createTicketMode) {
+      <div class="btn-container" id="btn-container">
+        <app-button
+          label="Create Ticket"
+          (clicked)="onCreateTicketMode()"
+          [disabled]="!selectedEnterprise"
+        ></app-button>
+        <app-button
+          label="View Tickets"
+          (clicked)="onViewTickets()"
+          [disabled]="!selectedEnterprise"
+        ></app-button>
+      </div>
+    } @else {
+      <div class="footer-container" id="footer">
+        <app-button
+          label="Cancel"
+          variant="secondary"
+          (clicked)="onCancel()"
+        ></app-button>
+        <app-button label="Proceed" (clicked)="createTicket()"></app-button>
+      </div>
+    }
+  </div>
+
+  <form #jwtForm action="" method="post" target="_blank" id="jwtForm">
+    <input #jwtInput type="hidden" name="jwt" id="jwtInput" />
+  </form>
+</div>

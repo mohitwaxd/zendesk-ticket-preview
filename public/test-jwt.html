@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWT SSO Test</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-section {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        pre {
+            background: #fff;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            border: 1px solid #ddd;
+        }
+        .error {
+            background: #f8d7da;
+            color: #842029;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #d1e7dd;
+            color: #0f5132;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>JWT SSO Test Page</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Generate JWT Token</h2>
+        <button onclick="testGenerateJWT()">Generate JWT</button>
+        <div id="jwt-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 2: Test Form Submission</h2>
+        <label>
+            Ticket ID: 
+            <input type="number" id="ticketId" value="2405" style="padding: 8px; margin: 10px;">
+        </label>
+        <br>
+        <button onclick="testFormSubmit()">Test Form Submit</button>
+        <div id="form-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 3: Direct SSO URL</h2>
+        <button onclick="testDirectSSO()">Test Direct SSO</button>
+        <div id="sso-result"></div>
+    </div>
+
+    <!-- Hidden form for testing -->
+    <form id="jwtForm" action="" method="post" target="_blank" style="display: none;">
+        <input type="hidden" name="jwt" id="jwtInput" />
+    </form>
+
+    <script>
+        async function testGenerateJWT() {
+            const resultDiv = document.getElementById('jwt-result');
+            resultDiv.innerHTML = '<p>Generating JWT...</p>';
+            
+            try {
+                const returnTo = '/hc/en-us/requests/2405';
+                const response = await fetch(`/zendesk/get-jwt?return_to=${encodeURIComponent(returnTo)}`);
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || error.message || 'Failed to generate JWT');
+                }
+                
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <strong>✅ JWT Generated Successfully!</strong>
+                        <pre>${JSON.stringify({
+                            tokenLength: data.token.length,
+                            tokenPreview: data.token.substring(0, 50) + '...',
+                            zendeskUrl: data.zendeskUrl,
+                            returnTo: returnTo
+                        }, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <strong>❌ Error:</strong>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        async function testFormSubmit() {
+            const resultDiv = document.getElementById('form-result');
+            const ticketId = document.getElementById('ticketId').value;
+            resultDiv.innerHTML = '<p>Testing form submission...</p>';
+            
+            try {
+                const returnTo = `/hc/en-us/requests/${ticketId}`;
+                const response = await fetch(`/zendesk/get-jwt?return_to=${encodeURIComponent(returnTo)}`);
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || error.message || 'Failed to get JWT');
+                }
+                
+                const data = await response.json();
+                const jwtForm = document.getElementById('jwtForm');
+                const jwtInput = document.getElementById('jwtInput');
+                
+                const encodedReturnTo = encodeURIComponent(returnTo);
+                const formAction = `${data.zendeskUrl}/access/jwt?return_to=${encodedReturnTo}`;
+                
+                jwtForm.action = formAction;
+                jwtInput.value = data.token;
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <strong>✅ Form configured!</strong>
+                        <p>Form action: ${formAction}</p>
+                        <p>Token length: ${data.token.length}</p>
+                        <p>Submitting form...</p>
+                    </div>
+                `;
+                
+                // Submit form
+                jwtForm.submit();
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <strong>❌ Error:</strong>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        async function testDirectSSO() {
+            const resultDiv = document.getElementById('sso-result');
+            resultDiv.innerHTML = '<p>Testing direct SSO...</p>';
+            
+            try {
+                const returnTo = '/hc/en-us/requests/2405';
+                const response = await fetch(`/zendesk/get-jwt?return_to=${encodeURIComponent(returnTo)}`);
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || error.message || 'Failed to get JWT');
+                }
+                
+                const data = await response.json();
+                const encodedReturnTo = encodeURIComponent(returnTo);
+                const ssoUrl = `${data.zendeskUrl}/access/jwt?jwt=${encodeURIComponent(data.token)}&return_to=${encodedReturnTo}`;
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <strong>✅ SSO URL Generated!</strong>
+                        <p><a href="${ssoUrl}" target="_blank">Click here to test SSO</a></p>
+                        <p style="font-size: 12px; word-break: break-all;">${ssoUrl.replace(data.token, 'TOKEN_HIDDEN')}</p>
+                    </div>
+                `;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <strong>❌ Error:</strong>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

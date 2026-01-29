@@ -359,34 +359,71 @@
             // Build return_to URL (matching previous app pattern)
             const returnTo = `/hc/en-us/requests/${ticketId}`;
             
+            console.log('View Full Ticket clicked');
+            console.log('Ticket ID:', ticketId);
+            console.log('Return to:', returnTo);
+            
             try {
+                // Show loading state
+                const button = event.target;
+                const originalText = button.innerHTML;
+                button.disabled = true;
+                button.innerHTML = 'Opening ticket...';
+                
                 // Fetch JWT token from backend (using support@telecrm.in)
-                const response = await fetch(`/zendesk/get-jwt?return_to=${encodeURIComponent(returnTo)}`);
+                const jwtUrl = `/zendesk/get-jwt?return_to=${encodeURIComponent(returnTo)}`;
+                console.log('Fetching JWT from:', jwtUrl);
+                
+                const response = await fetch(jwtUrl);
                 
                 if (!response.ok) {
-                    throw new Error('Failed to get JWT token');
+                    const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                    console.error('JWT fetch failed:', errorData);
+                    throw new Error(errorData.error || errorData.message || 'Failed to get JWT token');
                 }
                 
                 const data = await response.json();
+                console.log('JWT received, token length:', data.token ? data.token.length : 0);
+                console.log('Zendesk URL:', data.zendeskUrl);
+                
                 const token = data.token;
                 const zendeskUrl = data.zendeskUrl;
+                
+                if (!token) {
+                    throw new Error('No JWT token received from server');
+                }
                 
                 // Set form action and JWT token (matching previous app pattern)
                 const jwtForm = document.getElementById('jwtForm');
                 const jwtInput = document.getElementById('jwtInput');
                 
+                if (!jwtForm || !jwtInput) {
+                    throw new Error('JWT form elements not found');
+                }
+                
                 const encodedReturnTo = encodeURIComponent(returnTo);
                 const formAction = `${zendeskUrl}/access/jwt?return_to=${encodedReturnTo}`;
+                
+                console.log('Form action:', formAction);
+                console.log('Token preview:', token.substring(0, 50) + '...');
                 
                 jwtForm.action = formAction;
                 jwtInput.value = token;
                 
                 // Submit form (matching previous app pattern)
+                console.log('Submitting form to Zendesk...');
                 jwtForm.submit();
                 
             } catch (error) {
                 console.error('Error viewing ticket:', error);
-                alert('Failed to open ticket. Please try again.');
+                alert('Failed to open ticket: ' + error.message + '\n\nPlease check:\n1. support@telecrm.in exists in Zendesk\n2. JWT SSO is enabled in Zendesk\n3. Check browser console for details');
+                
+                // Re-enable button
+                const button = event.target;
+                if (button) {
+                    button.disabled = false;
+                    button.innerHTML = 'View Full Ticket in Zendesk';
+                }
             }
         }
 
