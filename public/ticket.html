@@ -227,6 +227,11 @@
         </div>
     </div>
 
+    <!-- Hidden form for JWT SSO (matching previous app pattern) -->
+    <form id="jwtForm" action="" method="post" target="_blank" style="display: none;">
+        <input type="hidden" name="jwt" id="jwtInput" />
+    </form>
+
     <script>
         // Get ticket ID from URL path
         // Expected URL format: /ticket/12345
@@ -346,15 +351,43 @@
             content.innerHTML = html;
         }
 
-        function viewFullTicket() {
+        async function viewFullTicket() {
             // Get ticket ID from URL
             const pathParts = window.location.pathname.split('/');
             const ticketId = pathParts[pathParts.length - 1];
             
-            // Redirect to SSO endpoint with return_to parameter and ticket_id
-            // The return_to must start with /hc/ for security
+            // Build return_to URL (matching previous app pattern)
             const returnTo = `/hc/en-us/requests/${ticketId}`;
-            window.location.href = `/zendesk/sso?return_to=${encodeURIComponent(returnTo)}&ticket_id=${ticketId}`;
+            
+            try {
+                // Fetch JWT token from backend (using support@telecrm.in)
+                const response = await fetch(`/zendesk/get-jwt?return_to=${encodeURIComponent(returnTo)}`);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to get JWT token');
+                }
+                
+                const data = await response.json();
+                const token = data.token;
+                const zendeskUrl = data.zendeskUrl;
+                
+                // Set form action and JWT token (matching previous app pattern)
+                const jwtForm = document.getElementById('jwtForm');
+                const jwtInput = document.getElementById('jwtInput');
+                
+                const encodedReturnTo = encodeURIComponent(returnTo);
+                const formAction = `${zendeskUrl}/access/jwt?return_to=${encodedReturnTo}`;
+                
+                jwtForm.action = formAction;
+                jwtInput.value = token;
+                
+                // Submit form (matching previous app pattern)
+                jwtForm.submit();
+                
+            } catch (error) {
+                console.error('Error viewing ticket:', error);
+                alert('Failed to open ticket. Please try again.');
+            }
         }
 
         function escapeHtml(text) {

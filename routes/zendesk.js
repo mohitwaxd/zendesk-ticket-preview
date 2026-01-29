@@ -54,19 +54,64 @@ function getUserFromSession(req) {
 }
 
 /**
- * GET /zendesk/sso
+ * GET /zendesk/get-jwt
  * 
- * Zendesk JWT SSO endpoint
- * 
- * Flow:
- * 1. Verify user is authenticated (get email from session)
- * 2. Validate return_to parameter
- * 3. Generate JWT token
- * 4. Redirect to Zendesk SSO URL
+ * Returns JWT token for form-based submission (matching previous app pattern)
  * 
  * Query parameters:
  * - return_to: Path to redirect after SSO (must start with /hc/)
- * - email: (Optional, for demo) User email if not in session
+ */
+router.get('/get-jwt', async (req, res) => {
+  try {
+    // Get return_to parameter
+    const returnTo = req.query.return_to;
+
+    // Validate return_to - must start with /hc/ for security
+    if (!returnTo || !jwtService.validateReturnTo(returnTo)) {
+      return res.status(400).json({
+        error: 'Invalid return_to parameter',
+        message: 'return_to must start with /hc/'
+      });
+    }
+
+    // Always use support@telecrm.in for JWT SSO (matching previous app pattern)
+    // This email is CC'd on all tickets, so it can access them
+    const user = {
+      email: 'support@telecrm.in',
+      name: 'Support'
+    };
+
+    // Generate JWT token with support@telecrm.in email
+    const token = jwtService.generateToken(user.email, user.name);
+
+    console.log('Generating JWT for form submission...');
+    console.log('Using email:', user.email);
+    console.log('Return to:', returnTo);
+
+    // Return token and Zendesk URL for form submission (matching previous app pattern)
+    const zendeskConfig = require('../config/zendesk');
+    res.json({
+      token: token,
+      zendeskUrl: `https://${zendeskConfig.subdomain}.zendesk.com`
+    });
+
+  } catch (error) {
+    console.error('Error generating JWT:', error);
+    console.error('Stack:', error.stack);
+    res.status(500).json({
+      error: 'Failed to generate JWT token',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * GET /zendesk/sso
+ * 
+ * Zendesk JWT SSO endpoint (legacy redirect method)
+ * 
+ * Query parameters:
+ * - return_to: Path to redirect after SSO (must start with /hc/)
  */
 router.get('/sso', async (req, res) => {
   try {
