@@ -26,25 +26,54 @@ class JWTService {
     const now = Math.floor(Date.now() / 1000);
     
     // JWT payload for Zendesk SSO
-    // IMPORTANT: The email must exist as a user in Zendesk for JWT SSO to work
+    // Required fields: iat, jti, email
+    // Optional but recommended: name, external_id
+    const cleanEmail = email.toLowerCase().trim();
+    const userName = name || cleanEmail.split('@')[0];
+    
     const payload = {
-      iat: now, // Issued at time
-      jti: uuidv4(), // Unique token ID (prevents reuse)
-      email: email.toLowerCase().trim(), // Zendesk requires lowercase email
-      name: name || email.split('@')[0], // Use email prefix if name not provided
+      iat: now, // Issued at time (required)
+      jti: uuidv4(), // Unique token ID (required, prevents reuse)
+      email: cleanEmail, // User email (required) - must match Zendesk user or will create new user
+      name: userName, // User name (optional but recommended)
+      // external_id: cleanEmail, // Optional: unique external identifier
     };
 
     console.log('Generating JWT token for:', payload.email);
     console.log('JWT Secret configured:', zendeskConfig.jwtSecret ? 'Yes' : 'No');
+    console.log('JWT Secret length:', zendeskConfig.jwtSecret ? zendeskConfig.jwtSecret.length : 0);
+    console.log('Payload:', JSON.stringify(payload, null, 2));
 
-    // Sign with Zendesk JWT secret
+    // Validate JWT secret exists
+    if (!zendeskConfig.jwtSecret) {
+      throw new Error('ZENDESK_JWT_SECRET is not configured');
+    }
+
+    // Sign with Zendesk JWT secret using HS256 algorithm
     // Token expires in 5 minutes (300 seconds)
-    const token = jwt.sign(payload, zendeskConfig.jwtSecret, {
-      algorithm: 'HS256',
-      expiresIn: '5m'
-    });
+    let token;
+    try {
+      token = jwt.sign(payload, zendeskConfig.jwtSecret, {
+        algorithm: 'HS256',
+        expiresIn: '5m',
+        noTimestamp: false // Ensure iat is included
+      });
+    } catch (error) {
+      console.error('JWT signing error:', error);
+      throw new Error(`Failed to sign JWT token: ${error.message}`);
+    }
 
-    console.log('JWT token generated successfully, length:', token.length);
+    console.log('JWT token generated successfully');
+    console.log('Token length:', token.length);
+    console.log('Token preview:', token.substring(0, 50) + '...');
+
+    // Verify token can be decoded (sanity check)
+    try {
+      const decoded = jwt.decode(token);
+      console.log('Token decoded successfully, payload:', JSON.stringify(decoded, null, 2));
+    } catch (error) {
+      console.warn('Warning: Could not decode generated token:', error);
+    }
 
     return token;
   }
@@ -76,12 +105,31 @@ class JWTService {
   buildSSOUrl(token, returnTo) {
     const baseUrl = zendeskConfig.ssoUrl;
     const encodedReturnTo = encodeURIComponent(returnTo);
-    const ssoUrl = `${baseUrl}?jwt=${token}&return_to=${encodedReturnTo}`;
     
-    // Log for debugging (remove in production or use proper logger)
-    console.log('JWT SSO URL:', ssoUrl.replace(token, 'TOKEN_HIDDEN'));
-    console.log('JWT Token length:', token.length);
+    // Build SSO URL: https://subdomain.zendesk.com/access/jwt?jwt=TOKEN&return_to=URL
+    // Note: JWT token should be URL-encoded to handle special characters safely
+    const encodedToken = encodeURIComponent(token);
+    const ssoUrl = `${baseUrl}?jwt=${encodedToken}&return_to=${encodedReturnTo}`;
+    
+    // Log for debugging
+    console.log('Building Zendesk SSO URL...');
+    console.log('Base URL:', baseUrl);
     console.log('Return to:', returnTo);
+    console.log('Encoded return to:', encodedReturnTo);
+    console.log('Token length:', token.length);
+    console.log('Encoded token length:', encodedToken.length);
+    console.log('SSO URL (token hidden):', ssoUrl.replace(encodedToken, 'TOKEN_HIDDEN'));
+    console.log('Full SSO URL length:', ssoUrl.length);
+    
+    // Validate URL format
+    if (!ssoUrl.startsWith('https://') || !ssoUrl.includes('/access/jwt')) {
+      throw new Error(`Invalid SSO URL format: ${ssoUrl}`);
+    }
+    
+    // Validate URL is not too long (browsers have URL length limits)
+    if (ssoUrl.length > 2000) {
+      console.warn('Warning: SSO URL is very long (' + ssoUrl.length + ' chars), may cause issues');
+    }
     
     return ssoUrl;
   }
